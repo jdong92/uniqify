@@ -24,16 +24,16 @@ int main(int argc, char *argv[])
 
 {
     int children = atoi(argv[1]);
-    int i = 0;
+    int i, j, status;
     int word_to_sort[children][2];
     int sort_to_suppress[children][2]; 
     int childPID; 
     char word[SIZE];
-    FILE *stream;
+    FILE *(stream[children]);
 
     for (i = 0; i < children; i++){
 
-	    if (pipe(word_to_sort[children]) == -1){
+	    if (pipe(word_to_sort[i]) == -1){
 		    perror("word_to_sort pipe error");
 		    exit(-1);
 	    }
@@ -46,31 +46,40 @@ int main(int argc, char *argv[])
         */
     }
 
+    for (i = 0; i < children; i++){
 
-    switch(childPID = fork()){
+        switch(childPID = fork()){
 
-        case -1:
-            perror("error creating fork");
-            exit(-1);
-        case 0:
-            dup2(word_to_sort[1][0], STDIN_FILENO);
+            case -1:
+                perror("error creating fork");
+                exit(-1);
+            case 0:
+                for (j = 0; j < children; j++){
 
-            if (close(word_to_sort[1][1]) == -1)
-                perror("error closing pipe");
+                    if (j != i){
 
-            if (close(word_to_sort[1][0]) == -1)
-                perror("error closing pipe");
+                        if (close(word_to_sort[j][0]) == -1)
+                            perror("error closing pipe");
 
-            execl("/bin/sort", "sort", 0);
-            break;
+                    }else{
 
-        default:
-            break;
+                        dup2(word_to_sort[j][0], STDIN_FILENO);
+              
+                        if (close(word_to_sort[j][0]) == -1)
+                            perror("error closing pipe");
+                    }
+                    close(word_to_sort[j][1]);
 
+                }
+                
+                execl("/bin/sort", "sort", 0);
+                _exit(EXIT_SUCCESS);
 
+            default:
+                break;
+        }
     }
-    
-    
+     
 	switch(childPID = fork()){
 	
 	case -1:
@@ -78,35 +87,45 @@ int main(int argc, char *argv[])
 		break;
 
 	case 0:
+        //suppressor goes here
 		break;
 
 	default:
 
-		if (close(word_to_sort[1][0]) == -1){
-		    perror("perror closing pipe");
-            exit(-1);
-		}
+        for (i = 0; i < children; i++){
 
-		stream = fdopen(word_to_sort[1][1], "w");
+		    if (close(word_to_sort[i][0]) == -1){
+		        perror("perror closing pipe");
+                exit(-1);    
+            } 
 
-		if (stream == NULL)
-		    perror("error reading stream");
-
-		if (close(word_to_sort[1][0]) == -1)
-		    perror("error closing pipe");
-
+            stream[i] = fdopen(word_to_sort[i][1], "w");
+        }	
 		    
 		while (fscanf(stdin, "%s", word) != EOF){
 
-		    strcat(word, "\n");
-		        //printf("%s \n", word);
-		    fputs(word, stream);
+            i = 0;
+            if (stream[i] == NULL)
+		        perror("error reading stream");	
+		   
+            strcat(word, "\n");
+		    //printf("%s \n", word);
+            
+            if (i >= children - 1){
+                i = 0;
+            }
 
+		    fputs(word, stream[i]);
+            i++;
 		}
 		   
-		if (fclose(stream) == EOF)
+		if (fclose(stream[i]) == EOF)
 		    perror("error closing stream");
 		    break;
+
+        for (i = 0; i < children; i++){
+            wait(&status);
+        }
          
 	}//end switch
  	    
