@@ -18,68 +18,97 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/wait.h>
-#define BUFSIZE 100
+#define SIZE 100
 
 int main(int argc, char *argv[])
 
 {
-	int pipefd[children][2];
-	int childPID; 
-   
- 	char word[BUFSIZE];
+    int children = atoi(argv[1]);
+    int i = 0;
+    int word_to_sort[children][2];
+    int sort_to_suppress[children][2]; 
+    int childPID; 
+    char word[SIZE];
     FILE *stream;
 
-	if (pipe(pipefd) == -1){
+    for (i = 0; i < children; i++){
 
-		perror("pipe error");
-		exit(-1);
-	}
+	    if (pipe(word_to_sort[children]) == -1){
+		    perror("word_to_sort pipe error");
+		    exit(-1);
+	    }
 
-	switch(childPID = fork()){
-	
+        /*
+        if (pipe(sort_to_suppress[children]) == -1){
+            perror("sort_to_suppress pipe error");
+            exit(-1);
+        }
+        */
+    }
+
+
+    switch(childPID = fork()){
+
         case -1:
-            fprintf(stderr, "error forking\n");
-            break;
-
+            perror("error creating fork");
+            exit(-1);
         case 0:
-            dup2(pipefd[0], STDIN_FILENO);
-            //dup2(sort2suppress, STDOUT_FILENO);
+            dup2(word_to_sort[1][0], STDIN_FILENO);
 
-            if (close(pipefd[1]) == -1)
+            if (close(word_to_sort[1][1]) == -1)
                 perror("error closing pipe");
 
-            if (close(pipefd[0]) == -1)
+            if (close(word_to_sort[1][0]) == -1)
                 perror("error closing pipe");
 
             execl("/bin/sort", "sort", 0);
-            exit(EXIT_SUCCESS);
             break;
 
-        default:  
-	        close(pipefd[0]);
-
-            stream = fdopen(pipefd[1], "w");
-
-            if (stream == NULL)
-                perror("error reading stream");
-
-            if (close(pipefd[0]) == -1)
-                perror("error closing pipe");
-
-            
-            while (fscanf(stdin, "%s", word) != EOF){
-
-                strcat(word, "\n");
-                //printf("%s \n", word);
-                fputs(word, stream);
-
-            }
-           
-            if (fclose(stream) == EOF)
-                perror("error closing stream");
+        default:
             break;
-         
-	}
+
+
+    }
     
-}
+    
+	switch(childPID = fork()){
+	
+	case -1:
+		fprintf(stderr, "error forking\n");
+		break;
+
+	case 0:
+		break;
+
+	default:
+
+		if (close(word_to_sort[1][0]) == -1){
+		    perror("perror closing pipe");
+            exit(-1);
+		}
+
+		stream = fdopen(word_to_sort[1][1], "w");
+
+		if (stream == NULL)
+		    perror("error reading stream");
+
+		if (close(word_to_sort[1][0]) == -1)
+		    perror("error closing pipe");
+
+		    
+		while (fscanf(stdin, "%s", word) != EOF){
+
+		    strcat(word, "\n");
+		        //printf("%s \n", word);
+		    fputs(word, stream);
+
+		}
+		   
+		if (fclose(stream) == EOF)
+		    perror("error closing stream");
+		    break;
+         
+	}//end switch
+ 	    
+}//end program
                  
