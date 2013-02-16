@@ -23,7 +23,6 @@
 int main(int argc, char *argv[])
 
 {
-<<<<<<< HEAD
 	int pipefd[children][2];
 	int childPID; 
    
@@ -82,39 +81,5 @@ int main(int argc, char *argv[])
          
 	}
     
-   
-=======
-        int     fd[2], nbytes;
-        int     result; 
-        char    readBuffer[BUFSIZE];
-
-        if(pipe(fd) != 0){
-                perror("Pipes");
-                exit(-1);
-        }
-
-        switch((result = fork())){
-
-            case -1:
-                    break;
-
-            case 0:
-                    close(fd[1]);
-                    //write to the content of fd[0] to STDOUT
-                    while ((nbytes = read(fd[0], readBuffer, BUFSIZE)) > 0){
-                        if (write(STDOUT_FILENO, readBuffer, nbytes) == -1)
-                            perror("write");
-                    }
-
-            default:
-                    close(fd[0]);
-                    //read the STDIN and write to fd[1]
-                    while ((nbytes = read(STDIN_FILENO, readBuffer, BUFSIZE)) > 0){
-                        if (write(fd[1], readBuffer, nbytes) == -1)
-                            perror("write");
-                    }           
-
-        }
->>>>>>> 8afe5df649866c94419630f950a7291e68a6475c
-
 }
+                 
