@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
     int sort_to_suppress[children][2]; 
     int childPID; 
     char word[SIZE];
-    FILE *(stream[children]);
+    FILE *(wstream[children]); //word_to_sort stream
+    FILE *(sstream[children]); //sort_to_suppressor
 
     for (i = 0; i < children; i++){
 
@@ -38,12 +39,10 @@ int main(int argc, char *argv[])
 		    exit(-1);
 	    }
 
-        /*
         if (pipe(sort_to_suppress[children]) == -1){
             perror("sort_to_suppress pipe error");
             exit(-1);
         }
-        */
     }
 
     for (i = 0; i < children; i++){
@@ -51,9 +50,12 @@ int main(int argc, char *argv[])
         switch(childPID = fork()){
 
             case -1:
+
                 perror("error creating fork");
                 exit(-1);
+
             case 0:
+
                 for (j = 0; j < children; j++){
 
                     if (j != i){
@@ -61,14 +63,23 @@ int main(int argc, char *argv[])
                         if (close(word_to_sort[j][0]) == -1)
                             perror("error closing pipe");
 
+                        if (close(sort_to_suppress[j][1]) == -1)
+                            perror("error closing pipe");
+
                     }else{
 
                         dup2(word_to_sort[j][0], STDIN_FILENO);
-              
+                        dup2(sort_to_suppress[j][1], STDOUT_FILENO);
+
                         if (close(word_to_sort[j][0]) == -1)
                             perror("error closing pipe");
+
+                        if (close(sort_to_suppress[j][1]) == -1)
+                            perror("error closing pipe");
                     }
+
                     close(word_to_sort[j][1]);
+                    close(sort_to_suppress[j][0]);
 
                 }
                 
@@ -76,6 +87,7 @@ int main(int argc, char *argv[])
                 _exit(EXIT_SUCCESS);
 
             default:
+
                 break;
         }
     }
@@ -83,11 +95,23 @@ int main(int argc, char *argv[])
 	switch(childPID = fork()){
 	
 	case -1:
+
 		fprintf(stderr, "error forking\n");
 		break;
 
 	case 0:
         //suppressor goes here
+        for (i = 0; i < children; i++){
+            
+            if (i != j){
+
+                sstream[j] = fdopen(pipeds[1], "r");
+
+            }else{
+
+            }
+            close(sort_to_suppress[i][1]);
+        }
 		break;
 
 	default:
@@ -99,13 +123,13 @@ int main(int argc, char *argv[])
                 exit(-1);    
             } 
 
-            stream[i] = fdopen(word_to_sort[i][1], "w");
+            wstream[i] = fdopen(word_to_sort[i][1], "w");
         }	
 		    
 		while (fscanf(stdin, "%s", word) != EOF){
 
             i = 0;
-            if (stream[i] == NULL)
+            if (wstream[i] == NULL)
 		        perror("error reading stream");	
 		   
             strcat(word, "\n");
@@ -115,11 +139,11 @@ int main(int argc, char *argv[])
                 i = 0;
             }
 
-		    fputs(word, stream[i]);
+		    fputs(word, wstream[i]);
             i++;
 		}
 		   
-		if (fclose(stream[i]) == EOF)
+		if (fclose(wstream[i]) == EOF)
 		    perror("error closing stream");
 		    break;
 
