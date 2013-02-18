@@ -151,16 +151,16 @@ int main(int argc, char *argv[])
 		default:
 		for (i = 0; i < children; i++){
 
-			close(word_to_sort[i][0]);
+		    close(word_to_sort[i][0]);
 		    close(sort_to_suppress[i][1]);
 		    close(sort_to_suppress[i][0]);
 		    wstream[i] = fdopen(word_to_sort[i][1], "w");
 		}       
 		i = 0;
-			while (fscanf(stdin, "%s", word) != EOF){
+		while (fscanf(stdin, "%s", word) != EOF){
 		       
 		    if (wstream[i] == NULL)
-				perror("error reading stream");	
+			perror("error reading stream");	
 		    
 		    filter_punctuation(word);
 		    strcat(word, "\n");
@@ -187,7 +187,6 @@ int main(int argc, char *argv[])
 
 /* Function source: http://stackoverflow.com/questions/9283555/removing-punctuations-in-a-string-in-c */
 void filter_punctuation(char *s){
-
     for (char *p = s; *p; ++p)
         if (isalpha(*p))
             *s++ = tolower(*p);
