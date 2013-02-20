@@ -99,7 +99,6 @@ int main(int argc, char *argv[])
 	switch(fork()){
 	
 		case 0:
-	    /*Most of the suppressor code I got help from Michael Phan who took this class last term. */
 		
 		for (i = 0; i < children; i++){     
 		    close(sort_to_suppress[i][1]);
